@@ -1,4 +1,4 @@
-# `my::vector` documentation
+# `my::vector`
 
 ## 简介
 
