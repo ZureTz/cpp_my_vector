@@ -1,0 +1,868 @@
+/*
+This is a library developed by myself to realize the same function as
+std::vector. It can be used in dynamic arrays with the ability to resize itself
+automatically when an element is inserted or deleted, with their storage being
+handled automatically by the container.
+
+* vectors are automatically allocated and freed/destructed, preventing memory
+  leak
+* insert or delete a element as you want
+* using iterator to point at the memory addresses of containers
+*/
+
+#ifndef __MYVECTOR_H
+#define __MYVECTOR_H
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+#include <iostream>
+#include <iterator>
+#include <type_traits>
+
+// using initializer_list to initialize a vector
+#include <initializer_list>
+
+namespace my {
+
+template <typename T> class vector {
+public:
+  /* Forward declaration */
+  class iterator;
+  class const_iterator;
+
+  /* Type definitions */
+  typedef T element_type;
+  typedef T *element_pointer;
+  typedef T &element_reference;
+  typedef T &&element_right_reference;
+  typedef const T *const_element_pointer;
+  typedef const T &const_element_reference;
+  typedef size_t size_type;
+  typedef vector<T> self_type;
+
+  /* Constructors */
+
+  // Default
+  vector();
+
+  // Length Constructor
+  vector(const int length);
+
+  // Copy Constructor
+  vector(const self_type &source);
+
+  // Construct from another one using range (begin and end)
+  // using iterator
+  vector(const_iterator first, const_iterator last);
+
+  // Move Constructor
+  vector(self_type &&source);
+
+  // Initialization List Constructor
+  vector(const std::initializer_list<element_type> init_list);
+
+  /* Destructor */
+  ~vector();
+
+  /* Get info */
+
+  // returns true if the list is empty
+  bool empty() const;
+
+  // Returns the length/size of the vector
+  // Complexity: Constant(O(1)), using iterator substraction
+  size_type size() const;
+
+  // Same as size();
+  size_type length() const;
+
+  // Capacity
+  size_type capacity() const;
+
+  /* ELEMENT ACCESS  */
+
+  // Returning a certain element
+  element_reference operator[](const int index);
+  element_reference at(const int index);
+
+  // Returns a direct reference to the front element, throws if list is empty
+  element_reference front();
+  const_element_reference front() const;
+
+  // Returns a direct reference to the rear element, throws if list is empty
+  element_reference back();
+  const_element_reference back() const;
+
+  /* Iterators */
+
+  iterator begin() const;
+  // const_iterator begin() const;
+
+  iterator end() const;
+  // const_iterator end() const;
+
+  /****** COMPARISON OPERATORS ******/
+
+  // Compares sizes, then comapres each element of the list for equality
+  bool operator==(const self_type &rhs) const;
+
+  // returns the logical NOT of the equality comparison
+  bool operator!=(const self_type &rhs) const;
+
+  /* Modifiers */
+
+  // Resize the vector
+  self_type &resize(const int size);
+
+  // Push element in front
+  self_type &push_front(element_right_reference argument);
+  self_type &push_front(const_element_reference argument);
+
+  // Push element in back
+  self_type &push_back(element_right_reference argument);
+  self_type &push_back(const_element_reference argument);
+
+  // pop element in front
+  self_type &pop_front();
+
+  // pop element in back
+  self_type &pop_back();
+  // pop back and return the value and store it to a virable.
+  element_type pop_back(element_reference out_param);
+
+  // insert a element before a given position
+  self_type &insert(iterator position, const_element_reference val);
+  // insert n element before a given position
+  self_type &insert(iterator position, size_type num,
+                    const_element_reference val);
+  // insert before a element using a range
+  template <class InputIterator>
+  self_type &insert(iterator position, InputIterator first,
+                    InputIterator last);
+  // insert a element before a given position
+  self_type &insert(iterator position, element_right_reference val);
+  // insert elements using initializer_list
+  self_type &insert(iterator position,
+                    std::initializer_list<element_type> object);
+
+  // erase the element at a certain position
+  self_type &erase(iterator position);
+  self_type &erase(iterator first, iterator end);
+
+  // Remove all elements
+  self_type &clear();
+
+  // Reverse all elements in order
+  self_type &reverse();
+
+  // Sort the vector, using STL
+  // self_type &sort();
+  // template <typename Compare> self_type &sort(Compare &&comp);
+
+  // Slice
+  self_type slice(const_iterator begin, const_iterator end);
+
+  // swap two vectors
+  // may use std::swap
+  void swap(self_type &object);
+
+  // assign the value in a special way
+  self_type &operator=(const self_type &object);
+  self_type &operator=(self_type &&object);
+  self_type &operator=(const std::initializer_list<element_type> init_list);
+
+private:
+  element_pointer vector_address = nullptr;
+  element_pointer vector_end = nullptr;
+  element_pointer vector_actual_end = nullptr;
+
+public:
+  class const_iterator {
+  public:
+    /* Type definitions */
+    typedef const_iterator self_type;
+
+    /* Constructors */
+    // default: iterator are set to nullptr
+    const_iterator(element_pointer ptr = nullptr) : pointer(ptr) {}
+
+    /* Operator overloads */
+    // dereference
+    // const_element_reference operator*() const;
+
+    // comparison operators
+    bool operator>(const self_type &rhs) const;
+    bool operator>=(const self_type &rhs) const;
+    bool operator<(const self_type &rhs) const;
+    bool operator<=(const self_type &rhs) const;
+    bool operator!=(const self_type &rhs) const;
+    bool operator==(const self_type &rhs) const;
+
+#if 0
+    // returns increased value, not changing pointer itself
+    self_type &operator+=(int num) const;
+    self_type &operator++() const;
+    // return pointer itself
+    self_type operator++(int) const;
+#endif
+
+    // plus or substract
+    iterator operator+(int rhs);
+    iterator operator-(int rhs);
+
+#if 0
+    // returns decreased value, not changing pointer itself
+    self_type &operator-=(int num) const;
+    self_type &operator--() const;
+    // returns pointer itself
+    self_type operator--(int) const;
+#endif
+
+    // "-" to calculate the range
+    int operator-(const self_type &rhs) const;
+
+    friend vector<T>;
+
+  private:
+    element_pointer pointer;
+  };
+
+  class iterator : public const_iterator {
+  public:
+    /* Type definitions */
+    typedef iterator self_type;
+
+    /* Constructors */
+    // default: iterator are set to nullptr
+    iterator(element_pointer ptr = nullptr) : const_iterator(ptr) {}
+    iterator(const const_iterator &it) : const_iterator(it) {}
+    iterator(const_iterator &&it) : const_iterator(it) {}
+
+    /* Operator overloads */
+    // dereference
+    element_reference operator*() const;
+
+    // self-increase
+    self_type &operator+=(int num);
+    self_type &operator++();
+    self_type operator++(int);
+
+    // self-decrease
+    self_type &operator-=(int num);
+    self_type &operator--();
+    self_type operator--(int);
+  };
+};
+
+} // namespace my
+#endif
+
+#ifndef __MYVECTOR_H_FUNCTIONS
+#define __MYVECTOR_H_FUNCTIONS
+
+namespace my {
+
+// a lambda function
+auto find_suitable_number = [](const int arg) {
+  // suitable number means a "int",
+  // which is the integer power of 2 and not less than "arg".
+
+  // specialization
+  if (arg <= 2) {
+    return 2;
+  }
+
+  // general
+  int temp1 = arg, count = 0;
+  for (; temp1 != 0; temp1 /= 2) {
+    count++;
+  }
+  int temp2 = 1;
+  for (int i = 0; i < count; i++) {
+    temp2 *= 2;
+  }
+  return temp2;
+};
+
+// Default Constructor
+template <typename T> vector<T>::vector() {
+  const int sized = find_suitable_number(0);
+  element_pointer temp = new T[sized]();
+  vector_address = temp;
+  vector_end = temp;
+  vector_actual_end = temp + sized;
+}
+
+// Length Constructor
+template <typename T> vector<T>::vector(const int length) {
+  if (length < 0) {
+    std::cout << "Error! The length of a vector must be no less than 0."
+              << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  const int lengthed = find_suitable_number(length);
+  element_pointer temp = new T[lengthed]();
+  vector_address = temp;
+  vector_end = temp + length;
+  vector_actual_end = temp + lengthed;
+}
+
+// Copy Constructor
+template <typename T> vector<T>::vector(const self_type &source) {
+  const int lengthed = find_suitable_number(source.length());
+  element_pointer temp = new T[lengthed]();
+  vector_address = temp;
+  vector_end = temp + source.length();
+  vector_actual_end = temp + lengthed;
+  (*this) = source;
+}
+
+// Construct from another one using range (begin and end)
+template <typename T>
+vector<T>::vector(const_iterator first, const_iterator last) {
+  if (first > last) {
+    std::cerr << "Invalid range: the first iterator must be less than the second iterator.";
+    exit(EXIT_FAILURE);
+  }
+  const int length = last - first;
+  const int lengthed = find_suitable_number(length);
+  element_pointer temp = new T[lengthed]();
+  vector_address = temp;
+  vector_end = temp + (length);
+  vector_actual_end = temp + lengthed;
+  for (iterator it = first; it != last; it++) {
+    this->at(it - first) = *it;
+  }
+}
+
+// Move Constructor
+template <typename T> vector<T>::vector(self_type &&source) {
+  const int lengthed = find_suitable_number(source.length());
+  element_pointer temp = new T[lengthed]();
+  vector_address = temp;
+  vector_end = temp + source.length();
+  vector_actual_end = temp + lengthed;
+  (*this) = source;
+}
+
+// Initialization List Constructor
+template <typename T>
+vector<T>::vector(const std::initializer_list<element_type> init_list) {
+  const int lengthed = find_suitable_number(init_list.size());
+  element_pointer temp = new T[lengthed]();
+  vector_address = temp;
+  vector_end = temp + init_list.size();
+  vector_actual_end = temp + lengthed;
+  iterator i = this->begin();
+  typename std::initializer_list<element_type>::iterator j = init_list.begin();
+  for (; i != this->end() && j != init_list.end(); i++, j++) {
+    *i = *j;
+  }
+}
+
+/* Destructor */
+template <typename T> vector<T>::~vector() {
+  vector_end = nullptr;
+  vector_actual_end = nullptr;
+  delete[] vector_address;
+}
+
+/* Get info */
+
+// returns true if the list is empty
+template <typename T> bool vector<T>::empty() const {
+  if (vector_address == vector_end) {
+    return true;
+  }
+  return false;
+}
+
+// Returns the length/size of the vector
+// Complexity: Constant(O(1)), using iterator substraction
+template <typename T> size_t vector<T>::size() const {
+  return vector_end - vector_address;
+}
+
+// Same as size();
+template <typename T> size_t vector<T>::length() const {
+  return vector_end - vector_address;
+}
+
+// Capacity
+template <typename T> size_t vector<T>::capacity() const {
+  return vector_actual_end - vector_address;
+}
+
+// Returning a certain element
+template <typename T> T &vector<T>::operator[](const int index) {
+  return vector_address[index];
+}
+template <typename T> T &vector<T>::at(const int index) {
+  if (index < 0 || index >= this->size()) {
+    std::cout << "Out of range!" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  return vector_address[index];
+}
+
+/* ELEMENT ACCESS  */
+
+// Returns a direct reference to the front element, throws if list is empty
+template <typename T> T &vector<T>::front() {
+  return *(iterator(this->begin()));
+}
+template <typename T> const T &vector<T>::front() const {
+  return *(this->begin());
+}
+
+// Returns a direct reference to the rear element, throws if list is empty
+template <typename T> T &vector<T>::back() {
+  return *(iterator(this->end() - 1));
+}
+template <typename T> const T &vector<T>::back() const {
+  return *(this->end() - 1);
+};
+
+/* Iterators */
+
+template <typename T> typename vector<T>::iterator vector<T>::begin() const {
+  return iterator(vector_address);
+}
+// template <typename T>
+// typename vector<T>::const_iterator vector<T>::begin() const {
+//   return const_iterator(vector_address);
+// }
+
+template <typename T> typename vector<T>::iterator vector<T>::end() const {
+  return iterator(vector_end);
+}
+// template <typename T>
+// typename vector<T>::const_iterator vector<T>::end() const {
+//   return const_iterator(vector_end);
+// }
+
+/****** COMPARISON OPERATORS ******/
+
+// Compares sizes, then comapres each element of the list for equality
+template <typename T> bool vector<T>::operator==(const vector<T> &rhs) const {
+  // if length are not the same
+  if (this->size() != rhs.size()) {
+    return false;
+  }
+  // else
+  for (iterator i = this->begin(), j = rhs.begin();
+       i != this->end() && j != rhs.end(); i++, j++) {
+    if ((*i) != (*j)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// returns the logical NOT of the equality comparison
+template <typename T> bool vector<T>::operator!=(const vector<T> &rhs) const {
+  // if length are not the same
+  if (this->size() != rhs.size()) {
+    return true;
+  }
+  for (iterator i = this->begin(), j = rhs.begin();
+       i != this->end() && j != rhs.end(); i++, j++) {
+    if ((*i) != (*j)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/* Modifiers */
+
+// Resize the vector
+template <typename T> vector<T> &vector<T>::resize(const int size) {
+  if (size > this->capacity()) {
+    const int sized = find_suitable_number(size);
+    element_pointer temp = new T[sized]();
+
+    for (int i = 0; i < this->size(); i++) {
+      temp[i] = (*this)[i];
+    }
+
+    delete[] vector_address;
+    vector_address = temp;
+    vector_actual_end = temp + sized;
+  }
+  vector_end = vector_address + size;
+  return *this;
+}
+
+// Push element in front
+template <typename T>
+vector<T> &vector<T>::push_front(element_right_reference argument) {
+  this->resize(this->size() + 1);
+  for (iterator it = this->end() - 1; it > this->begin(); it--) {
+    *it = *(it - 1);
+  }
+  this->front() = argument;
+  return *this;
+}
+template <typename T>
+vector<T> &vector<T>::push_front(const_element_reference argument) {
+  this->resize(this->size() + 1);
+  for (iterator it = this->end() - 1; it > this->begin(); it--) {
+    *it = *(it - 1);
+  }
+  this->front() = argument;
+  return *this;
+}
+
+// Push element in back
+template <typename T>
+vector<T> &vector<T>::push_back(element_right_reference argument) {
+  this->resize(this->size() + 1);
+  this->back() = argument;
+  return *this;
+}
+template <typename T>
+vector<T> &vector<T>::push_back(const_element_reference argument) {
+  this->resize(this->size() + 1);
+  this->back() = argument;
+  return *this;
+}
+
+// pop element in front
+template <typename T> vector<T> &vector<T>::pop_front() {
+  if (!empty()) {
+    for (auto it = this->begin(); it != end() - 1; it++) {
+      (*it) = (*(it + 1));
+    }
+    this->resize(this->size() - 1);
+  }
+  return *this;
+}
+template <typename T> vector<T> &vector<T>::pop_back() {
+  if (!empty()) {
+    *(vector_end - 1) = 0;
+    vector_end--;
+  }
+  return *this;
+}
+// pop back and return the value and store it to a virable.
+template <typename T> T vector<T>::pop_back(T &out_param) {
+  T temp = *(end() - 1);
+  this->pop_back();
+  return temp;
+}
+
+// insert a element before a given position
+template <typename T>
+vector<T> &vector<T>::insert(iterator position,
+                             const_element_reference val) {
+  if (empty()) {
+    (*this) = {val};
+    return *this;
+  }
+  int numpos = position - this->begin();
+  this->resize(this->size() + 1);
+  position = this->begin() + numpos;
+
+  for (iterator it = this->end() - 1; it != position; it--) {
+    *it = *(it - 1);
+  }
+  *position = val;
+
+  return *this;
+}
+// insert n element before a given position
+template <typename T>
+vector<T> &vector<T>::insert(iterator position, size_type num,
+                             const_element_reference val) {
+  const int original_size = this->size();
+
+  int numpos = position - this->begin();
+  this->resize(this->size() + num);
+  position = this->begin() + numpos;
+
+  for (iterator it = this->end() - 1, ori = this->begin() + original_size - 1;
+       ori >= position; it--, ori--) {
+    *it = *ori;
+  }
+
+  iterator it_dest = position;
+  for (int i = 0; i < num; i++, it_dest++) {
+    *it_dest = val;
+  }
+
+  return *this;
+}
+// insert before a element using a range
+template <typename T>
+template <class InputIterator>
+vector<T> &vector<T>::insert(iterator position, InputIterator first,
+                             InputIterator last) {
+  const int input_it_size = last - first;
+  const int original_size = this->size();
+
+  int numpos = position - this->begin();
+  this->resize(original_size + input_it_size);
+  position = this->begin() + numpos;
+
+  for (iterator it = this->end() - 1, ori = this->begin() + original_size - 1;
+       ori >= position; it--, ori--) {
+    *it = *ori;
+  }
+
+  iterator it_dest = position;
+  InputIterator it_src = first;
+  for (; it_src != last; it_dest++, it_src++) {
+    *it_dest = *it_src;
+  }
+
+  return *this;
+}
+// insert a element before a given position
+template <typename T>
+vector<T> &vector<T>::insert(iterator position,
+                             element_right_reference val) {
+  if (empty()) {
+    (*this) = {val};
+    return *this;
+  }
+  int numpos = position - this->begin();
+  this->resize(this->size() + 1);
+  position = this->begin() + numpos;
+
+  for (iterator it = this->end() - 1; it != position; it--) {
+    *it = *(it - 1);
+  }
+  *position = val;
+
+  return *this;
+}
+// insert elements using initializer_list
+template <typename T>
+vector<T> &vector<T>::insert(iterator position,
+                             std::initializer_list<element_type> object) {
+  if (empty()) {
+    *this = object;
+    return *this;
+  }
+  const int original_size = this->size();
+
+  int numpos = position - this->begin();
+  this->resize(original_size + object.size());
+  position = this->begin() + numpos;
+
+  for (iterator it = this->end() - 1, ori = this->begin() + original_size - 1;
+       ori >= position; it--, ori--) {
+    *it = *ori;
+  }
+
+  iterator it_dest = position;
+  typename std::initializer_list<element_type>::iterator it_src =
+      object.begin();
+  for (; it_src != object.end(); it_dest++, it_src++) {
+    *it_dest = *it_src;
+  }
+
+  return *this;
+}
+
+// erase the element at a certain position
+template <typename T> vector<T> &vector<T>::erase(iterator position) {
+  if (empty()) {
+    return *this;
+  }
+  for (iterator it = position; it != this->end() - 1; it++) {
+    *(it) = *(it + 1);
+  }
+  this->resize(this->size() - 1);
+  return *this;
+}
+template <typename T>
+vector<T> &vector<T>::erase(iterator first, iterator end) {
+  if (empty()) {
+    return *this;
+  }
+  for (iterator it_bg1 = first, it_bg2 = end;
+       it_bg1 != end && it_bg2 != this->end(); it_bg1++, it_bg2++) {
+    *it_bg1 = *it_bg2;
+  }
+  this->resize(this->size() - (end - first));
+  return *this;
+}
+
+// Remove all elements
+template <typename T> vector<T> &vector<T>::clear() {
+  vector_end = vector_address;
+  return *this;
+}
+
+// Reverse all elements in order
+template <typename T> vector<T> &vector<T>::reverse() {
+  iterator first = this->begin(), last = this->end();
+  while ((first != last) && (first != --last)) {
+    std::iter_swap(first, last);
+    ++first;
+  }
+  return *this;
+}
+
+// // Sort the vector, using STL
+// template <typename T> vector<T> &vector<T>::sort() {
+//   iterator bgn = iterator(this->begin()), end = iterator(this->end());
+//   std::sort(bgn, end, [](T a, T b) { return a < b; });
+//   return *this;
+// }
+// template <typename T>
+// template <typename Compare>
+// vector<T> &vector<T>::sort(Compare &&comp) {
+//   iterator bgn = iterator(this->begin()), end = iterator(this->end());
+//   std::sort(bgn, end, comp);
+//   return *this;
+// }
+
+// Slice
+template <typename T>
+vector<T> vector<T>::slice(const_iterator begin, const_iterator end) {
+  vector<T> result(end - begin);
+  for (iterator i = result.begin(), j = begin; i != result.end() && j != end;
+       i++, j++) {
+    *i = *j;
+  }
+  return result;
+}
+
+// swap two vectors
+// may use std::swap
+template <typename T> void vector<T>::swap(self_type &object) {
+  std::swap(this->vector_address, object.vector_address);
+  std::swap(this->vector_end, object.vector_end);
+  std::swap(this->vector_actual_end, object.vector_actual_end);
+}
+
+// assign the value in a special way
+template <typename T> vector<T> &vector<T>::operator=(const self_type &object) {
+  this->resize(object.size());
+  for (iterator i = this->begin(), j = object.begin();
+       i != this->end() && j != object.end(); i++, j++) {
+    *i = *j;
+  }
+  return *this;
+}
+template <typename T> vector<T> &vector<T>::operator=(self_type &&object) {
+  this->resize(object.size());
+  for (iterator i = this->begin(), j = object.begin();
+       i != this->end() && j != object.end(); i++, j++) {
+    *i = *j;
+  }
+  return *this;
+}
+template <typename T>
+vector<T> &
+vector<T>::operator=(const std::initializer_list<element_type> object) {
+  this->resize(object.size());
+  iterator i = this->begin();
+  typename std::initializer_list<element_type>::iterator j = object.begin();
+  for (; i != this->end() && j != object.end(); i++, j++) {
+    *i = *j;
+  }
+  return *this;
+}
+
+/* Class const_iterator Function Definitions */
+
+/* Operator overloads */
+
+// // dereference
+// template <typename T> const T &vector<T>::const_iterator::operator*() const {
+//   return *pointer;
+// }
+
+// comparison operators
+template <typename T>
+bool vector<T>::const_iterator::operator>(const self_type &rhs) const {
+  return this->pointer > rhs.pointer;
+}
+template <typename T>
+bool vector<T>::const_iterator::operator>=(const self_type &rhs) const {
+  return this->pointer >= rhs.pointer;
+}
+template <typename T>
+bool vector<T>::const_iterator::operator<(const self_type &rhs) const {
+  return this->pointer < rhs.pointer;
+}
+template <typename T>
+bool vector<T>::const_iterator::operator<=(const self_type &rhs) const {
+  return this->pointer <= rhs.pointer;
+}
+template <typename T>
+bool vector<T>::const_iterator::operator!=(const self_type &rhs) const {
+  return this->pointer != rhs.pointer;
+}
+template <typename T>
+bool vector<T>::const_iterator::operator==(const self_type &rhs) const {
+  return this->pointer == rhs.pointer;
+}
+
+// plus or substract
+template <typename T>
+typename vector<T>::iterator vector<T>::const_iterator::operator+(int rhs) {
+  return iterator(pointer + rhs);
+}
+template <typename T>
+typename vector<T>::iterator vector<T>::const_iterator::operator-(int rhs) {
+  return iterator(pointer - rhs);
+}
+
+// "-" to calculate the range
+template <typename T>
+int vector<T>::const_iterator::operator-(const self_type &rhs) const {
+  return static_cast<int>(pointer - rhs.pointer);
+}
+
+/* Class iterator Function Definitions */
+
+/* Operator overloads */
+// dereference
+template <typename T> T &vector<T>::iterator::operator*() const {
+  return *const_iterator::pointer;
+}
+
+// self-increase
+template <typename T>
+typename vector<T>::iterator &vector<T>::iterator::operator+=(int num) {
+  const_iterator::pointer += num;
+  return *this;
+}
+template <typename T>
+typename vector<T>::iterator &vector<T>::iterator::operator++() {
+  ++const_iterator::pointer;
+  return *this;
+}
+template <typename T>
+typename vector<T>::iterator vector<T>::iterator::operator++(int) {
+  iterator res = *this;
+  ++(*this);
+  return res;
+}
+
+// self-decrease
+template <typename T>
+typename vector<T>::iterator &vector<T>::iterator::operator-=(int num) {
+  const_iterator::pointer -= num;
+  return *this;
+}
+template <typename T>
+typename vector<T>::iterator &vector<T>::iterator::operator--() {
+  --const_iterator::pointer;
+  return *this;
+}
+template <typename T>
+typename vector<T>::iterator vector<T>::iterator::operator--(int) {
+  iterator res = *this;
+  --(*this);
+  return res;
+}
+
+} // namespace my
+#endif
